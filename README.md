@@ -27,7 +27,9 @@ A Simple way to keep the latest L10n String Resource using Google Docs & Python
     2.Press Enter key  
 
 5.Install Python Community Edition Plugin at Android studio  
-![Alt Text](https://raw.githubusercontent.com/leeyc09/L10nStringResourceAutomation/7a92f56eafd11f61398a235fce6b06edde8d6d43/images/aaaaaaa.png)
+![Alt Text](https://raw.githubusercontent.com/leeyc09/L10nStringResourceAutomation/7a92f56eafd11f61398a235fce6b06edde8d6d43/images/aaaaaaa.png)  
+![Alt Text](https://raw.githubusercontent.com/leeyc09/L10nStringResourceAutomation/7a92f56eafd11f61398a235fce6b06edde8d6d43/images/bbbbbb.png)  
+![Alt Text](https://raw.githubusercontent.com/leeyc09/L10nStringResourceAutomation/7a92f56eafd11f61398a235fce6b06edde8d6d43/images/ccccc.png)  
 6.Copy & paste Python script  
   Default path : module-script
   You can change path to modify build.gradle
