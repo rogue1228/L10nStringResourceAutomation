@@ -1,0 +1,49 @@
+apply plugin: 'com.android.application'
+
+ext.download_res_folder = 'src/main/res_down'
+ext.script_path = 'script/languageResource.py'
+ext.GoogleDocId = '1fsgo9QFlc9Y2GxIef_4pn-hYup03m6dBVSENT7DooBs#gid=0'
+
+task StringResourceSync(type: Exec) {
+    doFirst {
+        println ":::::::::::::" + "Start to get String Resources..." + ":::::::::::::"
+    }
+
+    commandLine = ['cmd', '/c', 'python' , script_path, GoogleDocId,download_res_folder]
+    //mac
+//    commandLine 'python', script_path, GoogleDocId,download_res_folder
+    doLast {
+        println ":::::::::::::" + "Finish to get String Resources..." + ":::::::::::::"
+    }
+}
+
+preBuild.dependsOn StringResourceSync
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
+
+    sourceSets {
+        main.res.srcDirs += download_res_folder
+    }
+
+    defaultConfig {
+        applicationId "com.tistory.tiii.sramt"
+        minSdkVersion 14
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.1.1'
+}
