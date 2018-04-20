@@ -1,142 +1,75 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
-import csv;
-
-import gdata.docs.service
-import gdata.spreadsheet.service
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 from xml.etree.ElementTree import ElementTree, Element, SubElement, dump
 
 
-'''
-    get google doc information from the command line argument
-    download method
-    Create by : YoungChan Lee
+class MyError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
 
-'''
+    def __str__(self):
+        return self.msg
+
 def get_gdoc_information_android():
-    #email = raw_input('Email address:')
-    #password = getpass('Password:')
-    #gdoc_id = raw_input('Google Doc Id:')
-    gdoc_id = sys.argv[1]
-    downloadpath = sys.argv[2]
-    try:
-        file_path = download(gdoc_id)
-        readCSV(downloadpath,file_path)
-    except Exception, e:
-        print ":::::::::::::ERROR:::::::::::::"
-        print(e)
-        #raise e
-
-def download(gdoc_id, download_path=None, ):
-
-    print "Downloading the CVS file with id %s" % gdoc_id
-
-    gd_client = gdata.docs.service.DocsService()
-
-    #auth using ClientLogin
-    gs_client = gdata.spreadsheet.service.SpreadsheetsService()
-    #gs_client.ClientLogin(email, password)
-
-    #getting the key(resource id and tab id from the ID)
-    resource    = gdoc_id.split('#')[0]
-    tab         = gdoc_id.split('#')[1].split('=')[1]
-    resource_id = 'spreadsheet:'+resource
-
-    if download_path is None:
-        download_path = os.path.abspath(os.path.dirname(__file__))
-
-    file_name = os.path.join(download_path, '%s.csv' % (gdoc_id))
-
-    print 'download_path : %s' % download_path;
-    print 'Downloading spreadsheet to %s' % file_name
-
-    docs_token = gd_client.GetClientLoginToken()
-    gd_client.SetClientLoginToken(gs_client.GetClientLoginToken())
-    gd_client.Export(resource_id, file_name, gid=tab)
-    gd_client.SetClientLoginToken(docs_token)
-
-    print "Download Completed!"
-
-    return file_name
-
-def readCSV(savepath, file_name):
-    print "read CSV file : %s" % file_name
-    SourceCSV= open(file_name,"r")
-    csvReader = csv.reader(SourceCSV)
-    header = csvReader.next()
-    androidkey_idx = header.index("android_key")
-    eng_idx = header.index("eng")
-    kor_idx = header.index("kor")
-    jap_idx = header.index("jap")
-
+    GDOC_ID = sys.argv[1]
+    JSON_KEY_PATH = sys.argv[2]
+    VALUES_PATH = sys.argv[3]
+    scope = ['https://spreadsheets.google.com/feeds']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(JSON_KEY_PATH, scope)
+    #test 현재경로
+    VALUES_PATH = os.getcwd()
+    #구글 로그인
+    gc = gspread.authorize(credentials)
+    #시트오픈
+    sh = gc.open_by_key(GDOC_ID)
+    print ":::::::::::::spreadsheets open:::::::::::::"
+    # Select worksheet by index. Worksheet indexes start from zero
+    worksheet = sh.sheet1
+    print ":::::::::::::Select worksheet:::::::::::::"
     # Make an empty Element
     resources_eng = Element("resources")
     resources_kor = Element("resources")
     resources_jap = Element("resources")
 
-    # Loop through the lines in the file and get each coordinate
-    for row in csvReader:
-        androidkey = row[androidkey_idx]
-        eng = row[eng_idx]
+    all_records = worksheet.get_all_records(empty2zero=False, head=1, default_blank='')
+    for record in all_records:
+        try:
+        # print("key : %s value : %s"% (record[u'android_key'],record[u'eng']))
+            if record[u'eng'] == "" : raise MyError("리소스 만들기 실패 key %s : 기본번역이 없습니다." %record[u'android_key'].encode('utf-8'))
+        
+            SubElement(resources_eng, "string", name=record[u'android_key']).text = record[u'eng'] 
+            SubElement(resources_kor, "string", name=record[u'android_key']).text = record[u'kor'] if record[u'kor'] != "" else record[u'eng']
+            SubElement(resources_jap, "string", name=record[u'android_key']).text = record[u'jap'] if record[u'jap'] != "" else record[u'eng']
+        except MyError as e:
+            print(e)
 
-        kor = row[kor_idx]
-        if not row[kor_idx]:
-            kor = row[eng_idx]
+    KR_PATH = os.path.join(VALUES_PATH, "values-ko")
+    EN_PATH = os.path.join(VALUES_PATH, "values")
+    JA_PATH = os.path.join(VALUES_PATH, "values-ja")
 
-        jap = row[jap_idx]
-        if not row[jap_idx]:
-            jap = row[eng_idx]
+    # 폴더가 없으면 만들어준다
+    if not os.path.exists(VALUES_PATH):
+        os.makedirs(VALUES_PATH)
 
+    if not os.path.exists(KR_PATH):
+        os.makedirs(KR_PATH)
 
-        #append eng resource
-        if row[eng_idx]:
-            string_eng = Element("string")
-            string_eng.attrib["name"] = androidkey.decode('utf-8')
-            string_eng.text = eng.decode('utf-8')
-            resources_eng.append(string_eng)
+    if not os.path.exists(EN_PATH):
+        os.makedirs(EN_PATH)
 
-            #append kor resource
-            string_kor = Element("string")
-            string_kor.attrib["name"] = androidkey.decode('utf-8')
-            string_kor.text =  kor.decode('utf-8')
-            resources_kor.append(string_kor)
+    if not os.path.exists(JA_PATH):
+        os.makedirs(JA_PATH)
 
-            #append jap resource
-            string_jap = Element("string")
-            string_jap.attrib["name"] = androidkey.decode('utf-8')
-            string_jap.text = jap.decode('utf-8')
-            resources_jap.append(string_jap)
-
-
-    # Print the coordinate list    
-    #dump(resources_eng)
-    #dump(resources_kor)
-    #dump(resources_jap)
-
-    #Make Resource Folder
-    newpath_en = savepath+r'\values'
-    if not os.path.exists(newpath_en):
-        os.makedirs(newpath_en)
-
-    newpath_ko = savepath+r'\values-ko'
-    if not os.path.exists(newpath_ko):
-        os.makedirs(newpath_ko)
-
-
-    newpath_ja = savepath+r'\values-ja'
-    if not os.path.exists(newpath_ja):
-        os.makedirs(newpath_ja)
-
-    #make Xml file
-    ElementTree(resources_eng).write(newpath_en+"\\string.xml", "utf-8")
-    ElementTree(resources_kor).write(newpath_ko+"\\string.xml", "utf-8")
-    ElementTree(resources_jap).write(newpath_ja+"\\string.xml", "utf-8")
-
-    SourceCSV.close()
-    os.remove(file_name)
+    krTree = ElementTree(resources_eng)
+    krTree.write(os.path.join(EN_PATH, "strings.xml"), encoding='utf-8', xml_declaration=True)
+    krTree = ElementTree(resources_kor)
+    krTree.write(os.path.join(KR_PATH, "strings.xml"), encoding='utf-8', xml_declaration=True)
+    krTree = ElementTree(resources_jap)
+    krTree.write(os.path.join(JA_PATH, "strings.xml"), encoding='utf-8', xml_declaration=True)
 
 
 if __name__=='__main__':
