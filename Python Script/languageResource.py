@@ -21,7 +21,7 @@ def get_gdoc_information_android():
     scope = ['https://spreadsheets.google.com/feeds']
     credentials = ServiceAccountCredentials.from_json_keyfile_name(JSON_KEY_PATH, scope)
     #test 현재경로
-    VALUES_PATH = os.getcwd()
+    # VALUES_PATH = os.getcwd()
     #구글 로그인
     gc = gspread.authorize(credentials)
     #시트오픈
