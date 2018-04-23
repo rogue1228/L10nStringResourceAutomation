@@ -1,19 +1,20 @@
 apply plugin: 'com.android.application'
 
-ext.download_res_folder = 'src/main/res_down'
-ext.script_path = 'script/languageResource.py'
-ext.GoogleDocId = '1fsgo9QFlc9Y2GxIef_4pn-hYup03m6dBVSENT7DooBs#gid=0'
+ext.download_res_folder = 'src/main/res_down' //저장될 별도의 리소스 폴더
+ext.script_path = 'script/languageResource.py' //스크립트 저장 경로
+ext.GoogleDocId = 'Google Doc ID' //구글 스프레드시트 독 아이디
+ext.json_key_path = 'script/some_auth_file.json' ///구글 키 저장 경로
 
 task StringResourceSync(type: Exec) {
     doFirst {
-        println ":::::::::::::" + "Start to get String Resources..." + ":::::::::::::"
+        println ":::" + "Start to get String Resources..." + ":::"
     }
-
-    commandLine = ['cmd', '/c', 'python' , script_path, GoogleDocId,download_res_folder]
-    //mac
-//    commandLine 'python', script_path, GoogleDocId,download_res_folder
+    // windows
+    // commandLine = ['cmd', '/c', 'python' , script_path, GoogleDocId,download_res_folder]
+    // mac
+    commandLine =['python', script_path, GoogleDocId, json_key_path, download_res_folder]
     doLast {
-        println ":::::::::::::" + "Finish to get String Resources..." + ":::::::::::::"
+        println ":::" + "Finish to get String Resources..." + ":::"
     }
 }
 
