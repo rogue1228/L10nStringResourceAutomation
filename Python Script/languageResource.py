@@ -20,8 +20,7 @@ def get_gdoc_information_android():
     VALUES_PATH = sys.argv[3]
     scope = ['https://spreadsheets.google.com/feeds']
     credentials = ServiceAccountCredentials.from_json_keyfile_name(JSON_KEY_PATH, scope)
-    #test 현재경로
-    # VALUES_PATH = os.getcwd()
+
     #구글 로그인
     gc = gspread.authorize(credentials)
     #시트오픈
@@ -30,46 +29,32 @@ def get_gdoc_information_android():
     # Select worksheet by index. Worksheet indexes start from zero
     worksheet = sh.sheet1
     print ":::::::::::::Select worksheet:::::::::::::"
-    # Make an empty Element
-    resources_eng = Element("resources")
-    resources_kor = Element("resources")
-    resources_jap = Element("resources")
 
-    all_records = worksheet.get_all_records(empty2zero=False, head=1, default_blank='')
-    for record in all_records:
-        try:
-        # print("key : %s value : %s"% (record[u'android_key'],record[u'eng']))
-            if record[u'eng'] == "" : raise MyError("리소스 만들기 실패 key %s : 기본번역이 없습니다." %record[u'android_key'].encode('utf-8'))
-        
-            SubElement(resources_eng, "string", name=record[u'android_key']).text = record[u'eng'] 
-            SubElement(resources_kor, "string", name=record[u'android_key']).text = record[u'kor'] if record[u'kor'] != "" else record[u'eng']
-            SubElement(resources_jap, "string", name=record[u'android_key']).text = record[u'jap'] if record[u'jap'] != "" else record[u'eng']
-        except MyError as e:
-            print(e)
+    all_values = worksheet.get_all_values()
 
-    KR_PATH = os.path.join(VALUES_PATH, "values-ko")
-    EN_PATH = os.path.join(VALUES_PATH, "values")
-    JA_PATH = os.path.join(VALUES_PATH, "values-ja")
+    for idx, locale in enumerate(all_values[0][1:]):
+        generate_xml(all_values, VALUES_PATH, locale, idx)
 
-    # 폴더가 없으면 만들어준다
-    if not os.path.exists(VALUES_PATH):
-        os.makedirs(VALUES_PATH)
+def generate_xml(datas, values_dir, locale, idx):
+    print "::::::::::::: %s parse start!:::::::::::::" % locale
 
-    if not os.path.exists(KR_PATH):
-        os.makedirs(KR_PATH)
+    if locale == 'en':
+        values_path = os.path.join(values_dir, "values")
+    else:
+        values_path = os.path.join(values_dir, "values-" + locale)
 
-    if not os.path.exists(EN_PATH):
-        os.makedirs(EN_PATH)
+    resources = Element("resources")
 
-    if not os.path.exists(JA_PATH):
-        os.makedirs(JA_PATH)
+    for value in datas[1:]:
+        data = value[idx]
+        key = value[0]
+        SubElement(resources, "string", name=key).text = data
 
-    krTree = ElementTree(resources_eng)
-    krTree.write(os.path.join(EN_PATH, "strings.xml"), encoding='utf-8', xml_declaration=True)
-    krTree = ElementTree(resources_kor)
-    krTree.write(os.path.join(KR_PATH, "strings.xml"), encoding='utf-8', xml_declaration=True)
-    krTree = ElementTree(resources_jap)
-    krTree.write(os.path.join(JA_PATH, "strings.xml"), encoding='utf-8', xml_declaration=True)
+    if not os.path.exists(values_path):
+        os.makedirs(values_path)
+
+    resource_tree = ElementTree(resources)
+    resource_tree.write(os.path.join(values_path, "strings.xml"), encoding='utf-8', xml_declaration=True)
 
 
 if __name__=='__main__':
